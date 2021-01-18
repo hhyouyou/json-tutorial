@@ -18,41 +18,28 @@ static void lept_parse_whitespace(lept_context *c) {
     c->json = p;
 }
 
-static int lept_parse_null(lept_context *c, lept_value *v) {
-    EXPECT(c, 'n');
-    if (c->json[0] != 'u' || c->json[1] != 'l' || c->json[2] != 'l')
-        return LEPT_PARSE_INVALID_VALUE;
-    c->json += 3;
-    v->type = LEPT_NULL;
-    return LEPT_PARSE_OK;
-}
-
-static int lept_parse_true(lept_context *c, lept_value *v) {
-    EXPECT(c, 't');
-    if (c->json[0] != 'r' || c->json[1] != 'u' || c->json[2] != 'e')
-        return LEPT_PARSE_INVALID_VALUE;
-    c->json += 3;
-    v->type = LEPT_TRUE;
-    return LEPT_PARSE_OK;
-}
-
-static int lept_parse_false(lept_context *c, lept_value *v) {
-    EXPECT(c, 'f');
-    if (c->json[0] != 'a' || c->json[1] != 'l' || c->json[2] != 's' || c->json[3] != 'e')
-        return LEPT_PARSE_INVALID_VALUE;
-    c->json += 4;
-    v->type = LEPT_FALSE;
+static int lept_parse_literal(lept_context *c, lept_value *v, const char *literal, lept_type type) {
+    /* 注意在 C 语言中，数组长度、索引值最好使用 size_t 类型，而不是 int 或 unsigned。 */
+    size_t i = 0;
+    EXPECT(c, literal[0]);
+    for (; literal[i + 1] != '\0'; i++) {
+        if (c->json[i] != literal[i + 1]) {
+            return LEPT_PARSE_INVALID_VALUE;
+        }
+    }
+    c->json += i;
+    v->type = type;
     return LEPT_PARSE_OK;
 }
 
 static int lept_parse_value(lept_context *c, lept_value *v) {
     switch (*c->json) {
         case 'n':
-            return lept_parse_null(c, v);
+            return lept_parse_literal(c, v, "null", LEPT_NULL);
         case 't':
-            return lept_parse_true(c, v);
+            return lept_parse_literal(c, v, "true", LEPT_TRUE);
         case 'f':
-            return lept_parse_false(c, v);
+            return lept_parse_literal(c, v, "false", LEPT_FALSE);
         case '\0':
             return LEPT_PARSE_EXPECT_VALUE;
         default:
